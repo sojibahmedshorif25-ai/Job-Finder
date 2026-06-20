@@ -1,0 +1,155 @@
+import { connectDB, client } from "./db.js";
+
+async function seed() {
+  console.log("Starting database seed...");
+  const { db } = await connectDB();
+
+  // Clear existing collections (optional, but good for reset)
+  await db.collection("users").deleteMany({});
+  await db.collection("startups").deleteMany({});
+  await db.collection("opportunities").deleteMany({});
+  await db.collection("applications").deleteMany({});
+  await db.collection("payments").deleteMany({});
+
+  // 1. Seed Users
+  const users = [
+    {
+      name: "Platform Admin",
+      email: "admin@startupforge.com",
+      image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150",
+      password: "AdminPassword123!",
+      role: "Admin",
+      isBlocked: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      name: "Elon Musk",
+      email: "founder1@tesla.com",
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150",
+      password: "FounderPassword123!",
+      role: "Founder",
+      isBlocked: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      name: "Jane Doe",
+      email: "founder2@startup.com",
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150",
+      password: "FounderPassword123!",
+      role: "Founder",
+      isBlocked: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      name: "Alex Smith",
+      email: "collab1@gmail.com",
+      image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150",
+      password: "CollabPassword123!",
+      role: "Collaborator",
+      isBlocked: false,
+      skills: ["React", "Node.js", "Tailwind CSS", "JavaScript"],
+      bio: "Full Stack Engineer passionate about building next-gen web applications.",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      name: "Sarah Connor",
+      email: "collab2@gmail.com",
+      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150",
+      password: "CollabPassword123!",
+      role: "Collaborator",
+      isBlocked: false,
+      skills: ["Figma", "UI/UX Design", "Wireframing", "Prototyping"],
+      bio: "Product designer with 3 years of experience in mobile and web platforms.",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  ];
+
+  await db.collection("users").insertMany(users);
+  console.log("Seeded 5 users successfully.");
+
+  // 2. Seed Startups
+  const startups = [
+    {
+      startup_name: "SpaceX Gen",
+      logo: "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=200",
+      industry: "Aerospace",
+      description: "Developing reusable orbital rockets to enable humans to become a multi-planetary species.",
+      funding_stage: "Series C",
+      founder_email: "founder1@tesla.com",
+      status: "Approved",
+      createdAt: new Date()
+    },
+    {
+      startup_name: "HealthFlow AI",
+      logo: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=200",
+      industry: "Healthcare",
+      description: "Leveraging machine learning to predict and optimize patient flow in regional hospitals.",
+      funding_stage: "Seed",
+      founder_email: "founder2@startup.com",
+      status: "Pending",
+      createdAt: new Date()
+    }
+  ];
+
+  const startupResults = await db.collection("startups").insertMany(startups);
+  console.log("Seeded 2 startups successfully.");
+
+  const spacexId = startupResults.insertedIds[0];
+  const healthflowId = startupResults.insertedIds[1];
+
+  // 3. Seed Opportunities
+  const opportunities = [
+    {
+      startup_id: spacexId,
+      startup_name: "SpaceX Gen",
+      founder_email: "founder1@tesla.com",
+      industry: "Aerospace",
+      role_title: "Rocket Guidance Systems Engineer",
+      required_skills: ["C++", "Rust", "Control Theory", "Embedded Systems"],
+      work_type: "On-site",
+      commitment_level: "Full-time",
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      createdAt: new Date()
+    },
+    {
+      startup_id: spacexId,
+      startup_name: "SpaceX Gen",
+      founder_email: "founder1@tesla.com",
+      industry: "Aerospace",
+      role_title: "React Web Developer (Mission Control)",
+      required_skills: ["React", "JavaScript", "D3.js", "Tailwind CSS"],
+      work_type: "Remote",
+      commitment_level: "Full-time",
+      deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
+      createdAt: new Date()
+    },
+    {
+      startup_id: healthflowId,
+      startup_name: "HealthFlow AI",
+      founder_email: "founder2@startup.com",
+      industry: "Healthcare",
+      role_title: "Python Data Scientist",
+      required_skills: ["Python", "PyTorch", "Pandas", "Healthcare Data"],
+      work_type: "Hybrid",
+      commitment_level: "Part-time",
+      deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
+      createdAt: new Date()
+    }
+  ];
+
+  await db.collection("opportunities").insertMany(opportunities);
+  console.log("Seeded 3 opportunities successfully.");
+
+  console.log("Database seeding completed successfully.");
+  await client.close();
+}
+
+seed().catch(err => {
+  console.error("Seeding error:", err);
+  process.exit(1);
+});
