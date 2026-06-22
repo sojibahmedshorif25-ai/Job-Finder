@@ -1,12 +1,4 @@
-# StartupForge Server
 
-StartupForge Server is the backend application powering the co-founder matching and team-building platform. It is built using Node.js, Express, MongoDB, Better Auth, and Stripe for payments.
-
-## 🚀 Features
-
-- **JWT Cookie-Based Authentication**: Secure authentication via Better Auth and custom JWT generation stored in HTTPOnly cookies.
-- **Role-Based Access Control (RBAC)**: Route protection and middleware for Founders, Collaborators, and Admins.
-- **Stripe Payments**: Integration with Stripe Checkout for premium subscriptions allowing founders to post more than 3 opportunities.
 - **Database Seeding**: Seeding script with dummy users, startups, opportunities, and applications for local testing.
 - **Opportunity Management**: Complete CRUD for startup profiles and job listings with search ($regex), filter ($in), and pagination support.
 - **Admin panel controls**: Block/unblock users, approve/reject startup profiles, and view payment history.
