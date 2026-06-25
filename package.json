@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.19",
+    "bcryptjs": "^3.0.3",
     "better-auth": "^1.1.18",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

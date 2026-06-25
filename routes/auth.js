@@ -1,10 +1,23 @@
+/* global process */
 import express from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from 'bcryptjs';
 import { getDB } from "../db.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "startupforge-jwt-secret-key-123456";
+
+// Password hashing helper
+const hashPassword = async (password) => {
+  const salt = await bcrypt.genSalt(12);
+  return await bcrypt.hash(password, salt);
+};
+
+// Password comparison helper
+const comparePassword = async (enteredPassword, hashedPassword) => {
+  return await bcrypt.compare(enteredPassword, hashedPassword);
+};
 
 // Validation helpers
 const validatePassword = (password) => {
@@ -25,8 +38,8 @@ const sendTokenResponse = (user, statusCode, res) => {
   const cookieOptions = {
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    secure: false,
+    sameSite: "lax"
   };
 
   res
@@ -72,11 +85,14 @@ router.post("/register", async (req, res) => {
       });
     }
 
+    // Hash password before storing
+    const hashedPassword = await hashPassword(password);
+
     const newUser = {
       name,
       email,
       image: image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150",
-      password, // In a real project, we would hash this, but we store it as is or hash it. Let's keep it simple for local verification or use standard string compare
+      password: hashedPassword,
       role,
       isBlocked: false,
       createdAt: new Date(),
@@ -103,7 +119,13 @@ router.post("/login", async (req, res) => {
     }
 
     const user = await db.collection("users").findOne({ email });
-    if (!user || user.password !== password) {
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Compare hashed password
+    const isPasswordValid = await comparePassword(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 

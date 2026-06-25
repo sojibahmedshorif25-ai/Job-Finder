@@ -2,8 +2,10 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { client } from "./db.js";
 
-// Initialize Better Auth with MongoDB adapter and custom fields
+const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 5001}`;
+
 export const auth = betterAuth({
+  baseURL,
   database: mongodbAdapter(client.db()),
   emailAndPassword: {
     enabled: true,
@@ -11,8 +13,9 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "mock-google-client-id",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "mock-google-client-secret"
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectURI: `${baseURL}/api/auth/callback/google`
     }
   },
   user: {
@@ -20,7 +23,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: true,
-        defaultValue: "Collaborator", // Founder, Collaborator, Admin
+        defaultValue: "Collaborator",
         input: true
       },
       isBlocked: {
@@ -30,5 +33,17 @@ export const auth = betterAuth({
         input: false
       }
     }
-  }
+  },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 7 * 24 * 60 * 60
+    }
+  },
+  trustedOrigins: [
+    process.env.CLIENT_URL || "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+  ]
 });

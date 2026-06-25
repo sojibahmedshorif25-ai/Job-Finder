@@ -8,10 +8,10 @@ const router = express.Router();
 // Create Startup (Founder only)
 router.post("/", verifyToken, requireRole(["Founder"]), async (req, res) => {
   try {
-    const { startup_name, logo, industry, description, funding_stage } = req.body;
+    const { startup_name, logo, industry, description, funding_stage, team_size } = req.body;
     const db = getDB();
 
-    if (!startup_name || !logo || !industry || !description || !funding_stage) {
+    if (!startup_name || !logo || !industry || !description || !funding_stage || !team_size) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -26,6 +26,7 @@ router.post("/", verifyToken, requireRole(["Founder"]), async (req, res) => {
       industry,
       description,
       funding_stage,
+      team_size: Number(team_size),
       founder_email: req.dbUser.email,
       status: "Pending", // Default status, pending Admin approval
       createdAt: new Date()
@@ -62,7 +63,7 @@ router.get("/my-startup", verifyToken, requireRole(["Founder"]), async (req, res
 // Update Startup (Founder only)
 router.put("/:id", verifyToken, requireRole(["Founder"]), async (req, res) => {
   try {
-    const { startup_name, logo, industry, description, funding_stage } = req.body;
+    const { startup_name, logo, industry, description, funding_stage, team_size } = req.body;
     const db = getDB();
     const id = req.params.id;
 
@@ -81,6 +82,7 @@ router.put("/:id", verifyToken, requireRole(["Founder"]), async (req, res) => {
     if (industry) updateFields.industry = industry;
     if (description) updateFields.description = description;
     if (funding_stage) updateFields.funding_stage = funding_stage;
+    if (team_size) updateFields.team_size = Number(team_size);
 
     await db.collection("startups").updateOne(
       { _id: new ObjectId(id) },
@@ -125,12 +127,34 @@ router.delete("/:id", verifyToken, requireRole(["Founder"]), async (req, res) =>
   }
 });
 
-// Get All Startups (Public - only Approved ones)
+// Get All Startups (Public - only Approved ones, with pagination)
 router.get("/", async (req, res) => {
   try {
     const db = getDB();
-    const startups = await db.collection("startups").find({ status: "Approved" }).toArray();
-    res.status(200).json({ success: true, startups });
+    const { page = 1, limit = 9 } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skipNum = (pageNum - 1) * limitNum;
+
+    const total = await db.collection("startups").countDocuments({ status: "Approved" });
+    const startups = await db.collection("startups")
+      .find({ status: "Approved" })
+      .sort({ createdAt: -1 })
+      .skip(skipNum)
+      .limit(limitNum)
+      .toArray();
+
+    res.status(200).json({
+      success: true,
+      startups,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch startups", error: error.message });
   }
