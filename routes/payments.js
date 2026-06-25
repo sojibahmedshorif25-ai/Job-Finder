@@ -5,7 +5,7 @@ import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "sk_test_51PxMockKey1234567890";
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 // Initialize Stripe
 const stripe = new Stripe(stripeSecretKey);
 
