@@ -91,7 +91,12 @@ app.post("/api/auth-better/sign-out", async (req, res, next) => {
 });
 app.get("/api/auth-better/social-sign-in", async (req, res, next) => {
   try {
-    const data = await auth.api.signInSocial({ body: { provider: "google", callbackURL: "/dashboard" }, headers: req.headers, asResponse: false });
+    const serverUrl = process.env.BETTER_AUTH_URL || `http://localhost:${PORT}`;
+    const data = await auth.api.signInSocial({
+      body: { provider: "google", callbackURL: `${serverUrl}/api/auth/callback/google` },
+      headers: req.headers,
+      asResponse: false
+    });
     res.json(data);
   } catch (err) { next(err); }
 });
@@ -108,8 +113,9 @@ app.all("/api/auth/callback/:provider", async (req, res, next) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
     }
-    if (data?.url) return res.redirect(data.url);
-    res.json(data);
+    // Redirect to client app after successful Google OAuth
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    return res.redirect(`${clientUrl}/dashboard`);
   } catch (err) { next(err); }
 });
 
