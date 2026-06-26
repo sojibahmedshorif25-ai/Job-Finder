@@ -109,6 +109,18 @@ app.all("/api/auth/callback/:provider", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Seed route
+app.get("/api/seed", async (req, res) => {
+  try {
+    const { seed } = await import("./seed.js");
+    await seed();
+    res.send("Database seeded successfully!");
+  } catch (err) {
+    console.error("Seeding error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Mount API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/startups", startupRoutes);

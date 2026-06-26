@@ -133,10 +133,15 @@ async function seed() {
   console.log("Seeded 3 opportunities successfully.");
 
   console.log("Database seeding completed successfully.");
-  await client.close();
 }
 
-seed().catch(err => {
-  console.error("Seeding error:", err);
-  process.exit(1);
-});
+// Allow running as script directly OR as imported module
+const isMainModule = process.argv[1]?.endsWith("seed.js");
+if (isMainModule) {
+  seed().catch(err => {
+    console.error("Seeding error:", err);
+    process.exit(1);
+  }).finally(() => client.close());
+}
+
+export { seed };
