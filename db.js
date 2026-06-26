@@ -5,8 +5,7 @@ dotenv.config();
 
 const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/startupforge";
 const client = new MongoClient(uri, {
-  serverSelectionTimeoutMS: 30000,
-  tlsInsecure: true
+  serverSelectionTimeoutMS: 30000
 });
 
 let db = null;
