@@ -1,5 +1,6 @@
 /* global process */
 import { connectDB, client } from "./db.js";
+import bcrypt from "bcryptjs";
 import { auth } from "./auth.js";
 
 async function seed() {
@@ -27,8 +28,14 @@ async function seed() {
     { name: "Sarah Connor",    email: "collab2@gmail.com",         image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150", password: "CollabPassword123!",  role: "Collaborator", skills: ["Figma", "UI/UX Design", "Wireframing", "Prototyping"], bio: "Product designer with 3 years of experience in mobile and web platforms." }
   ];
 
-  // 1. Seed Users — via BetterAuth so everyone can login with email/password
+  // 1. Seed Users — via BetterAuth + fallback custom auth
+  const hashPassword = async (password) => {
+    const salt = await bcrypt.genSalt(12);
+    return await bcrypt.hash(password, salt);
+  };
+
   for (const s of userSeeds) {
+    const hashed = await hashPassword(s.password);
     try {
       await auth.api.signUpEmail({
         body: {
@@ -40,22 +47,25 @@ async function seed() {
         headers: new Headers({ "content-type": "application/json" }),
         asResponse: false
       });
-      // Also add image/skills/bio to the custom users collection for profile display
-      await db.collection("users").insertOne({
-        email: s.email,
-        name: s.name,
-        image: s.image,
-        role: s.role,
-        isBlocked: false,
-        skills: s.skills || [],
-        bio: s.bio || "",
-        createdAt: now,
-        updatedAt: now
-      });
-      console.log(`Created user: ${s.email}`);
+      console.log(`BetterAuth user created: ${s.email}`);
     } catch (err) {
-      console.log(`User ${s.email} may already exist:`, err.message);
+      console.log(`BetterAuth skip (may exist): ${s.email} - ${err.message}`);
     }
+    // Also add to custom users collection (with hashed password for fallback auth)
+    await db.collection("users").deleteMany({ email: s.email });
+    await db.collection("users").insertOne({
+      email: s.email,
+      name: s.name,
+      image: s.image,
+      password: hashed,
+      role: s.role,
+      isBlocked: false,
+      skills: s.skills || [],
+      bio: s.bio || "",
+      createdAt: now,
+      updatedAt: now
+    });
+    console.log(`Custom user created: ${s.email}`);
   }
   console.log("Seeded 5 users successfully (BetterAuth + custom).");
 
