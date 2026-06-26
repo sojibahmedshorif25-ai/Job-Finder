@@ -4,7 +4,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/startupforge";
-const client = new MongoClient(uri);
+const client = new MongoClient(uri, {
+  tls: true,
+  tlsInsecure: true,
+  serverSelectionTimeoutMS: 15000
+});
 
 let db = null;
 
