@@ -24,7 +24,9 @@ const validatePassword = (password) => {
   const minLength = password.length >= 6;
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
-  return minLength && hasUppercase && hasLowercase;
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>_]/.test(password);
+  return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
 };
 
 // Generate JWT token and set cookie helper
@@ -35,11 +37,12 @@ const sendTokenResponse = (user, statusCode, res) => {
     { expiresIn: "7d" }
   );
 
+  const isProduction = process.env.NODE_ENV === "production";
   const cookieOptions = {
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    secure: false,
-    sameSite: "lax"
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax"
   };
 
   res

@@ -142,7 +142,11 @@ app.use("/api/admin", adminRoutes);
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.stack);
-  res.status(500).json({ message: "Something went wrong on the server", error: err.message });
+  const isProduction = process.env.NODE_ENV === "production";
+  res.status(500).json({
+    message: "Something went wrong on the server",
+    ...(isProduction ? {} : { error: err.message })
+  });
 });
 
 // Connect to Database and start server
