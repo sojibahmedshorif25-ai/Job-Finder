@@ -21,16 +21,15 @@ const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174"
+  "http://127.0.0.1:5174",
+  "https://job-finder-client.vercel.app"
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    console.log("Request from origin:", origin);
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
       callback(null, true);
     } else {
-      console.log("CORS rejected origin:", origin, "Allowed:", allowedOrigins);
       callback(null, false);
     }
   },
@@ -38,6 +37,8 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
 }));
+
+const isProduction = process.env.NODE_ENV === "production";
 
 app.use(express.json());
 app.use(cookieParser());
@@ -54,7 +55,7 @@ app.post("/api/auth-better/sign-in", async (req, res, next) => {
     if (data?.token) {
       // Set cookie manually from the response data
       res.cookie("better-auth.session_token", data.token, {
-        httpOnly: true, secure: false, sameSite: "lax",
+        httpOnly: true, secure: isProduction, sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
     }
@@ -66,7 +67,7 @@ app.post("/api/auth-better/sign-up", async (req, res, next) => {
     const data = await auth.api.signUpEmail({ body: req.body, headers: req.headers, asResponse: false });
     if (data?.token) {
       res.cookie("better-auth.session_token", data.token, {
-        httpOnly: true, secure: false, sameSite: "lax",
+        httpOnly: true, secure: isProduction, sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
     }
@@ -100,7 +101,7 @@ app.all("/api/auth/callback/:provider", async (req, res, next) => {
     const data = await auth.api.callbackOAuth({ query: Object.fromEntries(url.searchParams), headers: req.headers, asResponse: false });
     if (data?.token) {
       res.cookie("better-auth.session_token", data.token, {
-        httpOnly: true, secure: false, sameSite: "lax",
+        httpOnly: true, secure: isProduction, sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
     }

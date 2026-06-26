@@ -1,6 +1,6 @@
 /* global process */
 import { connectDB, client } from "./db.js";
-import bcrypt from "bcryptjs";
+import { auth } from "./auth.js";
 
 async function seed() {
   console.log("Starting database seed...");
@@ -17,45 +17,47 @@ async function seed() {
   await db.collection("applications").deleteMany({});
   await db.collection("payments").deleteMany({});
 
-  const hashPassword = async (password) => {
-    const salt = await bcrypt.genSalt(12);
-    return await bcrypt.hash(password, salt);
-  };
-
-  const adminHash = await hashPassword("AdminPassword123!");
-  const founderHash = await hashPassword("FounderPassword123!");
-  const collabHash = await hashPassword("CollabPassword123!");
-
   const now = new Date();
 
   const userSeeds = [
-    { name: "Platform Admin",  email: "admin@startupforge.com",    image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150", hash: adminHash,  role: "Admin" },
-    { name: "Elon Musk",       email: "founder1@tesla.com",        image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150", hash: founderHash, role: "Founder" },
-    { name: "Jane Doe",        email: "founder2@startup.com",      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150", hash: founderHash, role: "Founder" },
-    { name: "Alex Smith",      email: "collab1@gmail.com",         image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150", hash: collabHash,  role: "Collaborator", skills: ["React", "Node.js", "Tailwind CSS", "JavaScript"], bio: "Full Stack Engineer passionate about building next-gen web applications." },
-    { name: "Sarah Connor",    email: "collab2@gmail.com",         image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150", hash: collabHash,  role: "Collaborator", skills: ["Figma", "UI/UX Design", "Wireframing", "Prototyping"], bio: "Product designer with 3 years of experience in mobile and web platforms." }
+    { name: "Platform Admin",  email: "admin@startupforge.com",    image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150", password: "AdminPassword123!",  role: "Admin" },
+    { name: "Elon Musk",       email: "founder1@tesla.com",        image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150", password: "FounderPassword123!", role: "Founder" },
+    { name: "Jane Doe",        email: "founder2@startup.com",      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150", password: "FounderPassword123!", role: "Founder" },
+    { name: "Alex Smith",      email: "collab1@gmail.com",         image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150", password: "CollabPassword123!",  role: "Collaborator", skills: ["React", "Node.js", "Tailwind CSS", "JavaScript"], bio: "Full Stack Engineer passionate about building next-gen web applications." },
+    { name: "Sarah Connor",    email: "collab2@gmail.com",         image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150", password: "CollabPassword123!",  role: "Collaborator", skills: ["Figma", "UI/UX Design", "Wireframing", "Prototyping"], bio: "Product designer with 3 years of experience in mobile and web platforms." }
   ];
 
-  // 1. Seed Users — custom auth only (Better Auth users are created via registration)
-  const usersCollection = [];
-
+  // 1. Seed Users — via BetterAuth so everyone can login with email/password
   for (const s of userSeeds) {
-    usersCollection.push({
-      name: s.name,
-      email: s.email,
-      image: s.image,
-      password: s.hash,
-      role: s.role,
-      isBlocked: false,
-      skills: s.skills || [],
-      bio: s.bio || "",
-      createdAt: now,
-      updatedAt: now
-    });
+    try {
+      await auth.api.signUpEmail({
+        body: {
+          email: s.email,
+          password: s.password,
+          name: s.name,
+          role: s.role
+        },
+        headers: new Headers({ "content-type": "application/json" }),
+        asResponse: false
+      });
+      // Also add image/skills/bio to the custom users collection for profile display
+      await db.collection("users").insertOne({
+        email: s.email,
+        name: s.name,
+        image: s.image,
+        role: s.role,
+        isBlocked: false,
+        skills: s.skills || [],
+        bio: s.bio || "",
+        createdAt: now,
+        updatedAt: now
+      });
+      console.log(`Created user: ${s.email}`);
+    } catch (err) {
+      console.log(`User ${s.email} may already exist:`, err.message);
+    }
   }
-
-  await db.collection("users").insertMany(usersCollection);
-  console.log("Seeded 5 users successfully (custom auth).");
+  console.log("Seeded 5 users successfully (BetterAuth + custom).");
 
   // 2. Seed Startups
   const startups = [
