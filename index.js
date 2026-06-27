@@ -55,7 +55,9 @@ app.get("/", (req, res) => {
 // Better Auth Express routes using api methods directly
 app.post("/api/auth-better/sign-in", async (req, res, next) => {
   try {
-    const data = await auth.api.signInEmail({ body: req.body, headers: req.headers, asResponse: false });
+    // Strip existing cookies to avoid session conflicts during sign-in
+    const headers = { ...req.headers, cookie: "" };
+    const data = await auth.api.signInEmail({ body: req.body, headers, asResponse: false });
     if (data?.token) {
       // Set cookie manually from the response data
       res.cookie("better-auth.session_token", data.token, {
@@ -64,11 +66,14 @@ app.post("/api/auth-better/sign-in", async (req, res, next) => {
       });
     }
     res.json(data);
-  } catch (err) { next(err); }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "BetterAuth sign-in failed" });
+  }
 });
 app.post("/api/auth-better/sign-up", async (req, res, next) => {
   try {
-    const data = await auth.api.signUpEmail({ body: req.body, headers: req.headers, asResponse: false });
+    const headers = { ...req.headers, cookie: "" };
+    const data = await auth.api.signUpEmail({ body: req.body, headers, asResponse: false });
     if (data?.token) {
       res.cookie("better-auth.session_token", data.token, {
         httpOnly: true, secure: isProduction, sameSite: isProduction ? "none" : "lax",
@@ -76,7 +81,9 @@ app.post("/api/auth-better/sign-up", async (req, res, next) => {
       });
     }
     res.json(data);
-  } catch (err) { next(err); }
+  } catch (err) {
+    res.status(500).json({ success: false, message: "BetterAuth sign-up failed" });
+  }
 });
 app.get("/api/auth-better/session", async (req, res, next) => {
   try {
