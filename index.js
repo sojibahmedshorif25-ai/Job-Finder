@@ -120,10 +120,11 @@ app.all("/api/auth/callback/:provider", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Seed route (admin-only, disabled in production)
+// Seed route (protected by secret key to allow production seeding)
 app.get("/api/seed", async (req, res) => {
-  if (isProduction) {
-    return res.status(403).json({ message: "Seeding is disabled in production" });
+  const seedKey = req.query.key;
+  if (seedKey !== process.env.JWT_SECRET) {
+    return res.status(403).json({ message: "Invalid seed key" });
   }
   try {
     const { seed } = await import("./seed.js");
