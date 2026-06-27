@@ -110,7 +110,21 @@ router.get("/startups", async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.status(200).json({ success: true, startups });
+    // Enrich each startup with founder name from users collection
+    const enrichedStartups = await Promise.all(
+      startups.map(async (s) => {
+        const founder = await db.collection("users").findOne(
+          { email: s.founder_email },
+          { projection: { name: 1 } }
+        );
+        return {
+          ...s,
+          founder_name: founder ? founder.name : "Platform Member"
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, startups: enrichedStartups });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch startups", error: error.message });
   }
