@@ -3,6 +3,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { client } from "./db.js";
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 5001}`;
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
 export const auth = betterAuth({
   baseURL,
@@ -41,7 +42,7 @@ export const auth = betterAuth({
     }
   },
   trustedOrigins: [
-    process.env.CLIENT_URL || "http://localhost:5173",
+    clientUrl,
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",

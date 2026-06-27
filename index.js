@@ -17,11 +17,12 @@ import adminRoutes from "./routes/admin.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // CORS setup to allow client-side requests with credentials (cookies)
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 const allowedOrigins = [
-  process.env.CLIENT_URL || "http://localhost:5173",
+  clientUrl,
   "http://localhost:5174",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
@@ -119,8 +120,11 @@ app.all("/api/auth/callback/:provider", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Seed route
+// Seed route (admin-only, disabled in production)
 app.get("/api/seed", async (req, res) => {
+  if (isProduction) {
+    return res.status(403).json({ message: "Seeding is disabled in production" });
+  }
   try {
     const { seed } = await import("./seed.js");
     await seed();

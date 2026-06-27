@@ -5,9 +5,13 @@ import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+const isProduction = process.env.NODE_ENV === "production";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-// Initialize Stripe
-const stripe = new Stripe(stripeSecretKey);
+if (!stripeSecretKey) {
+  console.error("STRIPE_SECRET_KEY is not set. Payment features will fall back to mock mode.");
+}
+// Initialize Stripe (guard against undefined key)
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
 // Create Checkout Session
 router.post("/create-checkout-session", verifyToken, requireRole(["Founder"]), async (req, res) => {
@@ -22,6 +26,10 @@ router.post("/create-checkout-session", verifyToken, requireRole(["Founder"]), a
 
     if (existingPayment) {
       return res.status(400).json({ message: "You already have a Premium subscription" });
+    }
+
+    if (!stripe) {
+      return res.status(503).json({ message: "Payment service is not configured (missing STRIPE_SECRET_KEY)" });
     }
 
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -54,10 +62,11 @@ router.post("/create-checkout-session", verifyToken, requireRole(["Founder"]), a
 
     res.status(200).json({ success: true, url: session.url, sessionId: session.id });
   } catch (error) {
-    // Stripe failed - return a mock redirect URL for local testing
+    if (isProduction) {
+      return res.status(500).json({ message: "Payment service is currently unavailable" });
+    }
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const mockSessionId = `mock_session_${Date.now()}`;
-    // Provide a direct mock URL so the frontend can bypass Stripe
     res.status(200).json({
       success: true,
       url: `${clientUrl}/dashboard/payment-success?session_id=${mockSessionId}`,
@@ -114,8 +123,10 @@ router.post("/verify-session", verifyToken, requireRole(["Founder"]), async (req
       payment: { ...newPayment, _id: result.insertedId }
     });
   } catch (error) {
-    // Mock fallback: if Stripe verification fails (e.g. test/mock keys),
-    // create a mock payment so local testing still works
+    if (isProduction) {
+      return res.status(500).json({ message: "Payment verification failed" });
+    }
+    // Mock fallback for local development only
     try {
       const db = getDB();
       const existingMock = await db.collection("payments").findOne({
