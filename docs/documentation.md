@@ -1,6 +1,6 @@
 ﻿# Documentation
 
-Last updated: 2026-07-26
+Last updated: 2026-08-03
 
 ## Setup
 See README.md for setup instructions.
