@@ -39,3 +39,9 @@ coverage/
 tmp/
 *.tmp
 *.bak
+
+# 2026-08-28 update
+*.log
+.cache/
+dist/
+build/
