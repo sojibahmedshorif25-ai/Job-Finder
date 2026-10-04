@@ -34,9 +34,3 @@ Thank you for your interest in contributing!
 
 ## License
 Contributions are licensed under MIT.
-
-
-## Guidelines Update - 2026-10-01
-- All PRs must have tests
-- Follow semantic versioning
-- Keep commits atomic
